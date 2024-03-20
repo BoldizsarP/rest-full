@@ -20,5 +20,14 @@
   "bugs": {
     "url": "https://github.com/BoldizsarP/rest-full/issues"
   },
-  "homepage": "https://github.com/BoldizsarP/rest-full#readme"
+  "homepage": "https://github.com/BoldizsarP/rest-full#readme",
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2"
+  },
+  "dependencies": {
+    "@bunnio/type-guardian": "^0.0.8-rc.11",
+    "axios": "^1.6.8",
+    "zod": "^3.22.4"
+  }
 }
