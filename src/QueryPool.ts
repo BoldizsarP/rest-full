@@ -2,15 +2,10 @@ import {
   Descriptor,
   YAMLDocumentStructure,
 } from "@bunnio/type-guardian/dist/types";
-import { ZodTypeAny } from "zod";
+import { ZodAny, ZodFirstPartySchemaTypes, ZodTypeAny, z } from "zod";
 import { DeepReadonly } from "./interface-shortcuts/readonly";
 import { DescriptorBodies } from "./interface-shortcuts/requestBody/interface";
-import axios, {
-  AxiosHeaders,
-  AxiosPromise,
-  AxiosRequestConfig,
-  AxiosResponse,
-} from "axios";
+import axios, { AxiosHeaders, AxiosPromise, AxiosRequestConfig } from "axios";
 import {
   OperationObject,
   PathObject,
@@ -22,7 +17,6 @@ import {
 import { YamlNavigator } from "./lookup-navigator/navigator";
 import {
   HeaderParameter,
-  ParameterType,
   PathParameter,
   QueryParameter,
   TrueParameterType,
@@ -40,16 +34,9 @@ import {
   queryDeepObjectSerializer,
 } from "./parameter-tools/queryParameter";
 import { headerSimpleEncode } from "./parameter-tools/headerParameters";
-import {
-  SecurityRequirements,
-  SecuritySchema,
-} from "@bunnio/type-guardian/dist/yaml-tools/securitySchemes/interface";
-import { RecursivePartial } from "./interface-shortcuts/partial";
+import { SecuritySchema } from "@bunnio/type-guardian/dist/yaml-tools/securitySchemes/interface";
 import {
   DescriptorResponses,
-  GetResponse,
-  PostResponse,
-  PutResponse,
   ResponseFinder,
 } from "./interface-shortcuts/response/interface";
 
@@ -65,7 +52,7 @@ function styleToPrefix(style: "simple" | "label" | "matrix") {
       throw Error("Style is not path style!" + `<${style}>`);
   }
 }
-
+z.string();
 type DefaultContext<T> = {
   requestData: T & { url: string };
   queryParameterChain: string[];
@@ -85,7 +72,7 @@ function defaultContextMaker<T>(data: any): T {
 }
 
 export class QueryPool<
-  ZodPath extends Descriptor<ZodTypeAny>["paths"],
+  ZodPath extends Descriptor<ZodFirstPartySchemaTypes>["paths"],
   InterfacePath extends Descriptor<any>["paths"],
   Lookup extends DeepReadonly<YAMLDocumentStructure>,
   Body extends AxiosRequestConfig = AxiosRequestConfig,
@@ -110,6 +97,7 @@ export class QueryPool<
   lookupSecurityHandler;
   warnOnCookies;
   throwOnSecurityMissing;
+  additionalBodyParser;
   constructor(
     zodPath: ZodPath,
     lookUp: Lookup,
@@ -131,6 +119,36 @@ export class QueryPool<
         scopes: DeepReadonly<string[]>,
         context: Context
       ) => void;
+      additionalBodyParser?: {
+        [key: Exclude<string, "application/json" | "multipart/form-data">]: <
+          P extends keyof InterfacePath & string,
+          M extends keyof InterfacePath[P] &
+            string &
+            (
+              | "get"
+              | "put"
+              | "post"
+              | "delete"
+              | "options"
+              | "head"
+              | "patch"
+              | "trace"
+            ),
+          Bodies extends DescriptorBodies<InterfacePath[P][M]>,
+          BodyKey extends Bodies extends undefined
+            ? undefined
+            : keyof Bodies & string,
+          Content extends BodyKey extends keyof Bodies
+            ? Bodies[BodyKey]
+            : undefined
+        >(
+          path: P,
+          method: M,
+          bodyKey: BodyKey,
+          requestContent: Content,
+          context: Context
+        ) => void;
+      };
     }
   ) {
     this.zodPath = zodPath;
@@ -152,6 +170,7 @@ export class QueryPool<
     this.globalSecurityHandler = settings?.globalSecurityHandler;
     this.lookupSecurityHandler = settings?.lookupSecurityHandler;
     this.throwOnSecurityMissing = settings?.throwOnSecurityMissing ?? true;
+    this.additionalBodyParser = settings?.additionalBodyParser;
   }
 
   //   Since there is only 1 request body per request,
@@ -160,17 +179,16 @@ export class QueryPool<
   getBodyZod<
     P extends keyof InterfacePath & keyof ZodPath & string,
     M extends keyof InterfacePath[P] & keyof ZodPath[P] & string,
-    Bodies extends DescriptorBodies<ZodPath[P][M]> | undefined
+    Bodies extends DescriptorBodies<ZodPath[P][M]> | never,
+    BodyKey extends Bodies extends never ? never : keyof Bodies
   >(
     path: P,
     method: M,
-    key: Bodies extends undefined ? undefined : keyof Bodies
-  ) {
-    const OpZod = this.zodPath[path][method];
-    if (OpZod.requestBody && key) {
-      return OpZod["requestBody"][key];
-    }
-    if (this.silentError) return undefined;
+    key: BodyKey
+  ): BodyKey extends never ? undefined : ZodPath[P][M]["requestBody"][BodyKey] {
+    if (this.zodPath[path][method]["requestBody"])
+      return this.zodPath[path][method]["requestBody"]![key] as any;
+
     throw Error(
       "Zod is searched but not found on " + `${path} ${method} ${key}`
     );
@@ -280,7 +298,9 @@ export class QueryPool<
         | "trace"
       ),
     Bodies extends DescriptorBodies<InterfacePath[P][M]>,
-    BodyKey extends Bodies extends undefined ? undefined : keyof Bodies,
+    BodyKey extends Bodies extends undefined
+      ? undefined
+      : keyof Bodies & string,
     Content extends BodyKey extends keyof Bodies ? Bodies[BodyKey] : undefined
   >(
     path: P,
@@ -290,7 +310,7 @@ export class QueryPool<
     context: Context
   ): Body {
     if (!requestContent) throw Error("No content to encode!");
-
+    if (!bodyKey) throw Error("No bodyKey set!");
     const lookupReqBody = context.lookup.OperationObject.requestBody;
     if (!lookupReqBody) throw Error(`${path} and ${method} has no lookup!`);
     switch (bodyKey) {
@@ -309,6 +329,18 @@ export class QueryPool<
         break;
 
       default:
+        if (this.additionalBodyParser) {
+          if (bodyKey in this.additionalBodyParser) {
+            const fn = this.additionalBodyParser[bodyKey];
+            fn<P, M, Bodies, BodyKey, Content>(
+              path,
+              method,
+              bodyKey,
+              requestContent,
+              context
+            );
+          }
+        }
         throw Error("No encoder supported for request Body=" + `${bodyKey}`);
     }
 
@@ -617,8 +649,7 @@ export class QueryPool<
       ? "application/json"
       : keyof ResponseFinder<Responses, M>
   >(
-    context: Context,
-    expectedResult?: ExpectedResType
+    context: Context
   ): AxiosPromise<ResponseFinder<Responses, M>[ExpectedResType]> {
     const axiosContext = context.requestData;
     if (context.queryParameterChain.length > 0) {
@@ -631,6 +662,7 @@ export class QueryPool<
       });
       axiosContext.headers = headers;
     }
+    console.log(axiosContext);
     switch (context.method) {
       case "get":
         return axios.get(axiosContext.url, axiosContext);
@@ -668,10 +700,12 @@ export class QueryPool<
         | "head"
       >,
     Bodies extends DescriptorBodies<InterfacePath[P][M]>,
-    BodyKey extends Bodies extends undefined ? undefined : keyof Bodies,
+    BodyKey extends Bodies extends undefined
+      ? undefined
+      : keyof Bodies & string,
     Content extends BodyKey extends keyof Bodies ? Bodies[BodyKey] : undefined,
     Parameters extends DescriptorParameters<InterfacePath[P][M]>,
-    ZodOptions extends (BodyKey extends undefined
+    ZodOptions extends {} & (BodyKey extends undefined
       ? {}
       : { requestBody?: boolean }) &
       (Parameters extends undefined
@@ -703,6 +737,52 @@ export class QueryPool<
       validate?: ZodOptions;
     }
   ) {
+    if (bodyKey && options?.validate && options.validate != null) {
+      if (requestContent && "requestBody" in options.validate) {
+        const bodyValidator = this.zodPath[path][method]["requestBody"];
+        if (bodyValidator && bodyKey in bodyValidator) {
+          bodyValidator[bodyKey].parse(requestContent);
+        } else {
+          if (!this.silentError) {
+            throw Error("Zod requestBody not found!" + `${path}->${method}`);
+          } else
+            console.log("Zod requestBody not found!" + `${path}->${method}`);
+        }
+        if (parameters) {
+          const parZod = this.zodPath[path][method]["parameters"];
+          if (parZod)
+            Object.keys(parameters).forEach((keyType) => {
+              if (keyType in parZod) {
+                const parTargetZod = parZod[keyType as keyof typeof parZod];
+                if (parTargetZod) {
+                  Object.keys(parameters[keyType]).map((pr) => {
+                    const parameterZod = parTargetZod[pr];
+                    parameterZod.parse(parameters[keyType][pr]);
+                  });
+                }
+              } else if (!this.silentError) {
+                throw Error(
+                  "Zod paramters type not found!" +
+                    `${path}->${method}->${keyType}`
+                );
+              } else
+                console.log(
+                  "Zod paramters type not found!" +
+                    `${path}->${method}->${keyType}`
+                );
+            });
+          else if (!this.silentError) {
+            throw Error(
+              "Zod paramters group not found!" + `${path}->${method}`
+            );
+          } else
+            console.log(
+              "Zod paramters group not found!" + `${path}->${method}`
+            );
+        }
+      }
+    }
+
     const starter =
       typeof this.axiosStarter == "function"
         ? this.axiosStarter()

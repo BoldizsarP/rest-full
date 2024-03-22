@@ -1,3 +1,3 @@
 export type DescriptorParameters<T> = "parameters" extends keyof T
-  ? T["parameters"]
+  ? T["parameters"] & { [key: string]: any }
   : undefined;
