@@ -323,6 +323,31 @@ _Global security term means site wide security, defined at root level, local sec
 
 There is **no default behaviour** for security, but there are **two hooks provided** for the security operations.
 
+```ts
+class RequestPool {
+  constructor(
+    // {...},
+    settings?: {
+      //{...},
+      globalSecurityHandler?: (
+        security: DeepReadonly<SecuritySchema>,
+        scopes: DeepReadonly<string[]>,
+        name: string,
+        fullSecurity: DeepReadonly<SecurityRequirements>,
+        context: Context
+      ) => void;
+      lookupSecurityHandler?: (
+        security: DeepReadonly<SecuritySchema>,
+        scopes: DeepReadonly<string[]>,
+        name: string,
+        fullSecurity: DeepReadonly<SecurityRequirements>,
+        context: Context
+      ) => void;
+    }
+  ){...};
+}
+```
+
 ## Global security
 
 The **RequestPool** \(constructor parameter\) _options_ may contain a **globalSecurityHandler**, which then will be called for **every security** defined in the **openapi root security object**.
@@ -330,7 +355,7 @@ The **RequestPool** \(constructor parameter\) _options_ may contain a **globalSe
 With each call, you only get **one security schema**, but you can see the other keys defined in the fullSecurity object.
 
 ```ts
-funcion globalSecurityHandler (
+function globalSecurityHandler (
         security: DeepReadonly<SecuritySchema>,
         scopes: DeepReadonly<string[]>,
         name: string,
@@ -341,7 +366,20 @@ funcion globalSecurityHandler (
 
 To understand **"&"** and **"|"** behaviors and expectations in openapi security, please refer to the openapi specification.
 
-**SecuritySchema, and SecurityRequirements are exact values from the lookUpJson**, which is direct _translation_ of the original openapi.
+**SecuritySchema, and SecurityRequirements are exact values from the lookUpJson**, which is direct _translations_ of the original openapi.
+
+```ts
+// See more at @bunnio/type-guardian/dist/yaml-tools/securitySchemes/interface.d.ts
+export type SecuritySchema =
+  | BasicAuth
+  | BearerAuth
+  | ApiAuth
+  | OauthAuth
+  | OIDCAuth;
+export type SecurityRequirements = {
+  [key: string]: string[];
+} & ExtraYamlStuff;
+```
 
 It is expected of the programmer to fill out the required **context** fields when handling security.
 
@@ -350,20 +388,20 @@ It is expected of the programmer to fill out the required **context** fields whe
 Local security works exactly as global security does.
 
 ```ts
-funcion lookupSecurityHandler(
-        security: DeepReadonly<SecuritySchema>,
-        scopes: DeepReadonly<string[]>,
-        name: string,
-        fullSecurity: DeepReadonly<SecurityRequirements>,
-        context: Context
-      ) => {};
+function lookupSecurityHandler(
+  security: DeepReadonly<SecuritySchema>,
+  scopes: DeepReadonly<string[]>,
+  name: string,
+  fullSecurity: DeepReadonly<SecurityRequirements>,
+  context: Context
+) {}
 ```
 
 ## Priority
 
-If global security is defined, its keys get called first.
+If global security is defined, those keys get called first.
 
-Local security keys are called last, so you may overwrite or delete any security set previously in the global security.
+Local security keys are called last, so you may overwrite or delete any security set previously via global security.
 
 ## Best practices
 
