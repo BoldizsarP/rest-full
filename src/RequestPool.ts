@@ -73,7 +73,7 @@ function defaultContextMaker<T>(data: any): T {
   return data;
 }
 
-export class QueryPool<
+export class RequestPool<
   ZodPath extends Descriptor<ZodFirstPartySchemaTypes>["paths"],
   InterfacePath extends Descriptor<any>["paths"],
   Lookup extends DeepReadonly<YAMLDocumentStructure>,
@@ -445,7 +445,7 @@ export class QueryPool<
 
       default:
         throw Error(
-          `Query style must be one of "form" | "spaceDelimited" | "pipeDelimited" | "deepObject"! is ${mode}`
+          `Request style must be one of "form" | "spaceDelimited" | "pipeDelimited" | "deepObject"! is ${mode}`
         );
     }
   }
@@ -699,7 +699,7 @@ export class QueryPool<
     throw Error(`The method ${context.method} is not conforming`);
   }
 
-  async query<
+  async request<
     P extends keyof InterfacePath & keyof ZodPath & string,
     M extends keyof InterfacePath[P] &
       keyof ZodPath[P] &

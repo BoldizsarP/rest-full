@@ -16,22 +16,22 @@ This package provides a class that expects 3 shaped values
 
 and provides a pre typed interface to properly use said Openapi specification.
 
-The default **QueryPool** object is written for Axios, but you can easily change it to your preferred HTTP client.
+The default **RequestPool** object is written for Axios, but you can easily change it to your preferred HTTP client.
 
 An example initialization
 
 ```ts
-import { QueryPool } from "@bunnio/rest-full/dist/QueryPool";
+import { RequestPool } from "@bunnio/rest-full/dist/RequestPool";
 import { paths as ZodPath } from "./YourOpenapiSource.zod";
 import { lookupJson } from "./YourOpenapiSource.lookup";
 import { paths as InterfacePaths } from "./YourOpenapiSource.interface";
-const qp = new QueryPool<typeof ZodPath, InterfacePaths, typeof lookupJson>(
+const qp = new RequestPool<typeof ZodPath, InterfacePaths, typeof lookupJson>(
   ZodPath,
   lookupJson
 );
 ```
 
-the **QueryPool** instance will be a pre-typed interface according to your specification.
+the **RequestPool** instance will be a pre-typed interface according to your specification.
 
 You can use it as as:
 
@@ -58,14 +58,14 @@ The path and method will be key combinations available in your specification.
 ## BodyKey and Content
 
 BodyKey and Content are defined by what is allowed in the openapi specification.
-The default implementation of **QueryPool** can only parse application/json and multipart/form-data, but let's you submit any shape.
+The default implementation of **RequestPool** can only parse application/json and multipart/form-data, but let's you submit any shape.
 
-If any other body shape is supplied, **QueryPool** will throw an error during execution.
+If any other body shape is supplied, **RequestPool** will throw an error during execution.
 
 To facilitate other parsers you may use the settings object during initialization:
 
 ```ts
-const qp = new QueryPool<typeof ZodPath, InterfacePaths, typeof lookupJson>(
+const qp = new RequestPool<typeof ZodPath, InterfacePaths, typeof lookupJson>(
   ZodPath,
   lookupJson,
   {additionalBodyParser:{"multipart/mixed":(
@@ -78,14 +78,14 @@ const qp = new QueryPool<typeof ZodPath, InterfacePaths, typeof lookupJson>(
 );
 ```
 
-You must adhere to the format, every additional type must be matched with a parser function that has the standard inputs (provided by **QueryPool**)
+You must adhere to the format, every additional type must be matched with a parser function that has the standard inputs (provided by **RequestPool**)
 
 - path,method, bodyKey, and requestContent are directly passed from original "query" call
 - context is defined in two segments
-- - The mandatory context supplied by the **QueryPool**
+- - The mandatory context supplied by the **RequestPool**
 - - The optional context that can be initialized by **contextMaker** in the settings
 
-The bodyParser is expected to fill out the appropriate fields in the **context**, see more at the **QueryPool.query and Context**
+The bodyParser is expected to fill out the appropriate fields in the **context**, see more at the **RequestPool.query and Context**
 
 ## Parameters
 
@@ -172,7 +172,8 @@ Default is **application/json**.
 ## Responses
 
 The response shape is based on the **method type**, and **responses defined** in the openapi.
-by default
+
+By default
 
 ```ts
 type GetKeys = Pick<PathObject, "get" | "options" | "head">; //-> expects 200 first but checks 201 if available
@@ -198,7 +199,7 @@ will translate to:
 
 _I am currently working on a standardized approach, to enable response parsing, but for now, be aware of this limitation_
 
-# QueryPool.query and Context
+# RequestPool.query and Context
 
 Every time a **query** is called, the function creates a context, which then gets filled with every information the query may need.
 
@@ -259,13 +260,13 @@ After the execution the **context** is considered consumed, and will be thrown a
 
 # Security
 
-_Global security term means site wide security, defined at root level, local security means security defined at OperationOjbect_
+_Global security term means site wide security, defined at root level, local security means security defined at OperationObject_
 
-There is **no default behaviour** for security, but there is **two hooks provided** for the security operations.
+There is **no default behaviour** for security, but there are **two hooks provided** for the security operations.
 
 ## Global security
 
-The **QueryPool** constructor parameter _options_ may contain a **globalSecurityHandler**, which then will be called for **every security** defined in the **openapi root security object**.
+The **RequestPool** \(constructor parameter\) _options_ may contain a **globalSecurityHandler**, which then will be called for **every security** defined in the **openapi root security object**.
 
 With each call, you only get **one security schema**, but you can see the other keys defined in the fullSecurity object.
 
@@ -307,7 +308,7 @@ Local security keys are called last, so you may overwrite or delete any security
 
 ## Best practices
 
-Since **QueryPool** calls the **contextCreator** and the **security tools** **on demand**, it is best if you use these handlers to connect your security information with any other state manager you may use.
+Since **RequestPool** calls the **contextCreator** and the **security tools** **on demand**, it is best if you use these handlers to connect your security information with any other state manager you may use.
 
 If your security measures do not change often it might be best to use the **contextCreator** or **defaultSettings** to always ensure your api key/bearer token is set.
 
@@ -321,7 +322,7 @@ Zod schemas are pre built via [type-guardian](https://www.npmjs.com/package/@bun
 
 ![Alt Text](./documentation/images/ZodSample.jpg)
 
-The **QueryPool** currently supports 2+1 Zod Schema retriever.
+The **RequestPool** currently supports 2+1 Zod Schema retriever.
 
 - getBodyZod
 - **getPathZod**
@@ -368,7 +369,7 @@ Each category is a _key_->**ZodSchema** pair, that you can use to parse the para
 
 ## YamlNavigator
 
-A yaml navigator is included in the **QueryPool**.
+A yaml navigator is included in the **RequestPool**.
 
 This class ensures, that every _lookUp_ entry passed through the layers are the actual component, and not just a $ref,
 
