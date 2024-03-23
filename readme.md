@@ -14,7 +14,7 @@ The default QueryPool object is written for Axios, but you can easily change it 
 
 An example intialization
 
-```
+```ts
 import { QueryPool } from "@bunnio/rest-full/dist/QueryPool";
 import { paths as ZodPath } from "./YourOpenapiSource.zod";
 import { lookupJson } from "./YourOpenapiSource.lookup";
@@ -27,18 +27,17 @@ const qp = new QueryPool<typeof ZodPath, InterfacePaths, typeof lookupJson>(
 
 This will qp will act as a pretyped interface according to your specification, you can use as:
 
-```
-const response = qp
-  .query(
-    "/image/{image_id}", // path in openapi
-    "put", // method defined in path
-    "application/json", // body type if applicable or undefined <alias BodyKey>
-    {}, // the actual body content or undefined <alias Content>
-    {
-      path: { image_id: "RandomStringId" },
-    }, // every allowed <parameter> specified under <parameters> in openapi
-    { validate: { requestBody: true } } // optional settings see below
-  )
+```ts
+const response = qp.query(
+  "/image/{image_id}", // path in openapi
+  "put", // method defined in path
+  "application/json", // body type if applicable or undefined <alias BodyKey>
+  {}, // the actual body content or undefined <alias Content>
+  {
+    path: { image_id: "RandomStringId" },
+  }, // every allowed <parameter> specified under <parameters> in openapi
+  { validate: { requestBody: true } } // optional settings see below
+);
 ```
 
 ## Path and method
@@ -53,7 +52,7 @@ The default implementation of QueryPool can only parse application/json and mult
 If any other body shape is supplied the QP will throw an error during execution.
 To facilitate other parsers you may use the settings object during initialization:
 
-```
+```ts
 const qp = new QueryPool<typeof ZodPath, InterfacePaths, typeof lookupJson>(
   ZodPath,
   lookupJson,
@@ -111,7 +110,7 @@ The value expectedResultType may contain which response shape you expect, if mul
 The response shape is based on the method type, and responses defined in the openapi.
 by default
 
-```
+```ts
 type GetKeys = Pick<PathObject, "get" | "options" | "head">; //-> expects 200 first but checks 201 if available
 type PutKeys = Pick<PathObject, "delete" | "patch" | "put">; //-> expects 200 first but checks 201 if available
 type PostKeys = Pick<PathObject, "post">; //->expects 201 first but checks 200 if available
@@ -131,7 +130,7 @@ The context shape can be extended by the user via specifing contextMaker in the 
 
 The context must contain some elements like
 
-```
+```ts
 requestData: T & { url: string };
   queryParameterChain: string[];
   headers: [string, string][];
@@ -148,7 +147,7 @@ requestData: T & { url: string };
 
 however the contextMaker get's all this information as a single argument, so you only need to append with whatever extra information you might want
 
-```
+```ts
 contextMaker?: (starter: DefaultContext<Body>) => Context;
 ```
 
@@ -166,7 +165,7 @@ A context is created at the beginning of the request and every tools build's it 
 
 The request get's created in the execute function, which only has a single input, and that is the context.
 
-```
+```ts
 execute<
    ...
   >(
@@ -188,7 +187,7 @@ The QP constructor options may contain a globalSecurityHandler, which will be ca
 
 At every call you only get one security schema, but you can see other keys defined in fullSecurity if available.
 
-```
+```ts
 globalSecurityHandler?: (
         security: DeepReadonly<SecuritySchema>,
         scopes: DeepReadonly<string[]>,
@@ -207,7 +206,7 @@ It is expected of the programmer to fill out the required context fields when ha
 
 Local security works exactly as global security does.
 
-```
+```ts
 lookupSecurityHandler?: (
         security: DeepReadonly<SecuritySchema>,
         scopes: DeepReadonly<string[]>,
@@ -248,7 +247,7 @@ This also means that you may need to break up the zod definitions, for example i
 
 You can use z.infer to make type defintions easier
 
-```
+```ts
 const fullZod = qp.getPathZod("/image/with_files", "post");
 type ZodStuff = z.infer<(typeof fullZod)["requestBody"]["multipart/form-data"]>;
 ```
