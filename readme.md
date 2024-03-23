@@ -8,7 +8,12 @@ A Class oriented wrapper for the @bunnio/type-guardian, that enables the user to
 
 ## Initialization
 
-This package provides a class that expects 3 shaped values (Openapi.interface,Openapi.zod,Openapi.lookup provided by @bunnio/type-guardian) and provides a pre typed interface to properly use said Openapi specification.
+This package provides a class that expects 3 shaped values
+
+(Openapi.interface,Openapi.zod,Openapi.lookup provided by @bunnio/type-guardian)
+![Alt Text](./documentation/images/TGFormatExample.jpg)
+
+and provides a pre typed interface to properly use said Openapi specification.
 
 The default **QueryPool** object is written for Axios, but you can easily change it to your preferred HTTP client.
 
@@ -39,6 +44,9 @@ const response = qp.query(
   { validate: { requestBody: true } } // optional settings see below
 );
 ```
+
+Watch the magic happen:
+![Alt Text](./documentation/gifs/ShowcaseTypeHints.gif)
 
 ## Path and method
 
@@ -79,19 +87,63 @@ The bodyParser is expected to fill out the appropriate fields in the context, se
 
 The parameters shape is matching to that provided by the type-guardian interface object,
 
-Each parameter object may contain a path object, query object, and a header object if applicable.
+```ts
+interface Example {
+  parameters: { path: { image_id: string } };
+}
+```
+
+Each parameter object may contain any or none of the following groups: path,query,header,~~header~~.
+
+```ts
+interface Example {
+  parameters?: {
+    query: {
+      search_id?: components["schemas"]["StringQueryBody"];
+      mode_id?: components["schemas"]["StringQueryMode"];
+      search_profile?: components["schemas"]["BoolQueryBody"];
+      mode_profile?: components["schemas"]["BoolQueryMode"];
+      search_filename?: components["schemas"]["StringQueryBody"];
+      mode_filename?: components["schemas"]["StringQueryMode"];
+      search_format?: components["schemas"]["StringQueryBody"];
+      mode_format?: components["schemas"]["StringQueryMode"];
+      search_created_at?: components["schemas"]["DateQueryBody"];
+      mode_created_at?: components["schemas"]["DateQueryMode"];
+      search_user_id?: components["schemas"]["StringQueryBody"];
+      mode_user_id?: components["schemas"]["StringQueryMode"];
+      search_group_id?: components["schemas"]["StringQueryBody"];
+      mode_group_id?: components["schemas"]["StringQueryMode"];
+    };
+  };
+}
+```
 
 As of now, cookies are not handled regardless if required or provided
 
 The parameters are parsed based on the specification, with respect to their specified style and explode settings.
 
+```ts
+const mode = parameter.style ?? "simple"; // As default
+const explode = parameter.explode ?? false; // As default
+```
+
 Unparsable parameters will throw an error, please refer to either openapi specification, or the src/parameter-tools files
+
+A Path error example:
+
+```ts
+throw Error(
+  `Path style must be one of "simple" | "label" | "matrix"! is ${mode}`
+);
+```
 
 ## Additional settings
 
 ### Validator
 
 The zod validators may be called via specifying which validators you want to use in the validators object.
+
+![Alt Text](./documentation/images/ValidatorExample.jpg)
 
 The validator object can only contain values that are provided in the previous steps, the type hints should help you call any available validators
 
@@ -102,7 +154,7 @@ In general it's best practise to use validators BEFORE calling query, see **Zod 
 ### Expected Result Type
 
 The value expectedResultType may contain which response shape you expect,
-_such as **aplication/json**, **multipart/form-data**_
+_such as **application/json**, **multipart/form-data**_
 if multiple is defined in the responses object of the operation.
 This is purely used to set the proper response shape.
 
@@ -118,6 +170,13 @@ type PostKeys = Pick<PathObject, "post">; //->expects 201 first but checks 200 i
 ```
 
 the current implementation of response type **can not** distuingish between supported and not supported response types.
+
+Defintions like:
+![Alt Text](./documentation/images/ResponseShapeExample1.jpg)
+with content:
+![Alt Text](./documentation/images/ResponseShapeExample2.jpg)
+will translate to:
+![Alt Text](./documentation/images/ResponseShapeExample3.jpg)
 
 Axios by default decodes json response, but any other expected response must be decoded by the programmer
 
