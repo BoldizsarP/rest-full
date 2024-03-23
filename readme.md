@@ -1,6 +1,6 @@
 # rest-full
 
-A Class oriented wrapper for the @bunnio/type-guardian, that enables the user to customize, and independently manage openapi endpoint (structures).
+A Class oriented wrapper for the [@bunnio/type-guardian](https://www.npmjs.com/package/@bunnio/type-guardian)!, that enables the user to customize, and independently manage openapi endpoint (structures).
 
 # CONSIDER AS _whatever comes before pre alpha_ VERSION
 
@@ -10,14 +10,15 @@ A Class oriented wrapper for the @bunnio/type-guardian, that enables the user to
 
 This package provides a class that expects 3 shaped values
 
-(Openapi.interface,Openapi.zod,Openapi.lookup provided by @bunnio/type-guardian)
+(Openapi.interface,Openapi.zod,Openapi.lookup provided by [@bunnio/type-guardian](https://www.npmjs.com/package/@bunnio/type-guardian)!)
+
 ![Alt Text](./documentation/images/TGFormatExample.jpg)
 
 and provides a pre typed interface to properly use said Openapi specification.
 
 The default **QueryPool** object is written for Axios, but you can easily change it to your preferred HTTP client.
 
-An example intialization
+An example initialization
 
 ```ts
 import { QueryPool } from "@bunnio/rest-full/dist/QueryPool";
@@ -30,7 +31,9 @@ const qp = new QueryPool<typeof ZodPath, InterfacePaths, typeof lookupJson>(
 );
 ```
 
-This will qp will act as a pretyped interface according to your specification, you can use as:
+the **QueryPool** instance will be a pre-typed interface according to your specification.
+
+You can use it as as:
 
 ```ts
 const response = qp.query(
@@ -50,14 +53,15 @@ Watch the magic happen:
 
 ## Path and method
 
-The path and method supplied are pre typed, they will not allow any other combination than what is defined in the openapi
+The path and method will be key combinations available in your specification.
 
 ## BodyKey and Content
 
 BodyKey and Content are defined by what is allowed in the openapi specification.
-The default implementation of **QueryPool** can only parse application/json and multipart/form-data
+The default implementation of **QueryPool** can only parse application/json and multipart/form-data, but let's you submit any shape.
 
-If any other body shape is supplied, the QP will throw an error during execution.
+If any other body shape is supplied, **QueryPool** will throw an error during execution.
+
 To facilitate other parsers you may use the settings object during initialization:
 
 ```ts
@@ -74,18 +78,18 @@ const qp = new QueryPool<typeof ZodPath, InterfacePaths, typeof lookupJson>(
 );
 ```
 
-You must adhere to format defined above, where every additional type must be matched with a parser function that has the standard inputs provided by **QueryPool**
+You must adhere to the format, every additional type must be matched with a parser function that has the standard inputs (provided by **QueryPool**)
 
 - path,method, bodyKey, and requestContent are directly passed from original "query" call
-- context is defined by two parts
+- context is defined in two segments
 - - The mandatory context supplied by the **QueryPool**
-- - The optional context that can be initialized by contextMaker in the settings
+- - The optional context that can be initialized by **contextMaker** in the settings
 
-The bodyParser is expected to fill out the appropriate fields in the context, see more at the context description
+The bodyParser is expected to fill out the appropriate fields in the **context**, see more at the **QueryPool.query and Context**
 
 ## Parameters
 
-The parameters shape is matching to that provided by the type-guardian interface object,
+The parameters shape is matching to what is provided by the [type-guardian](https://www.npmjs.com/package/@bunnio/type-guardian)! interface parser.
 
 ```ts
 interface Example {
@@ -93,7 +97,7 @@ interface Example {
 }
 ```
 
-Each parameter object may contain any or none of the following groups: path,query,header,~~header~~.
+Each parameter object may contain **any or none** of the following groups: **path,query,header**,~~cookies~~.
 
 ```ts
 interface Example {
@@ -137,30 +141,37 @@ throw Error(
 );
 ```
 
+Parameters are expected to be **simple** type, **content type is not yet supported**
+
 ## Additional settings
 
 ### Validator
 
-The zod validators may be called via specifying which validators you want to use in the validators object.
+The zod validators may be called via specifying which validators you want to use in the _validate_ object.
 
 ![Alt Text](./documentation/images/ValidatorExample.jpg)
 
-The validator object can only contain values that are provided in the previous steps, the type hints should help you call any available validators
+The _validate_ object can only contain values that are provided in the previous steps, the type hints should help you call any available validators
 
-Validators are run before the context gets built, and are strictly called only at values submitted.
+Validators are run before the context gets built, and are strictly called only for values/keys that were submitted.
 
-In general it's best practise to use validators BEFORE calling query, see **Zod integration** tools
+In general it's better practise to use validators BEFORE calling query, see **Zod integration**
 
 ### Expected Result Type
 
 The value expectedResultType may contain which response shape you expect,
-_such as **application/json**, **multipart/form-data**_
-if multiple is defined in the responses object of the operation.
-This is purely used to set the proper response shape.
+
+_such as **application/json**, **multipart/form-data**_,
+
+if multiple content type is defined in the responses object of the operation.
+
+This is only used to set the proper response shape.
+
+Default is **application/json**.
 
 ## Responses
 
-The response shape is based on the method type, and responses defined in the openapi.
+The response shape is based on the **method type**, and **responses defined** in the openapi.
 by default
 
 ```ts
@@ -172,15 +183,20 @@ type PostKeys = Pick<PathObject, "post">; //->expects 201 first but checks 200 i
 the current implementation of response type **can not** distuingish between supported and not supported response types.
 
 Defintions like:
+
 ![Alt Text](./documentation/images/ResponseShapeExample1.jpg)
+
 with content:
+
 ![Alt Text](./documentation/images/ResponseShapeExample2.jpg)
+
 will translate to:
+
 ![Alt Text](./documentation/images/ResponseShapeExample3.jpg)
 
-Axios by default decodes json response, but any other expected response must be decoded by the programmer
+**Axios decodes json response by default**, but any other expected response **must be decoded by the programmer**
 
-I am currently working on a standardized approach, to enable response parsing, but for now, be aware of this limitation
+_I am currently working on a standardized approach, to enable response parsing, but for now, be aware of this limitation_
 
 # QueryPool.query and Context
 
@@ -188,7 +204,7 @@ Every time a **query** is called, the function creates a context, which then get
 
 ## Setting up context
 
-The context shape can be extended by the user via specifing contextMaker in the constructor settings.
+The context shape can be extended via specifing contextMaker in the _constructor_ settings.
 
 The context must contain elements like,
 
@@ -209,7 +225,7 @@ type context<Body> = {
 };
 ```
 
-however, the **contextMaker gets all this information as a single argument**, so you only need to append with whatever extra information you might want
+however, the **contextMaker gets all this information**, so you only need to append with whatever extra information you might want
 
 ```ts
 {contextMaker?: (starter: DefaultContext<Body>) => Context;}
@@ -217,17 +233,17 @@ however, the **contextMaker gets all this information as a single argument**, so
 
 ## Context building
 
-A context is created at the beginning of the request and every tool builds it during it's lifespan.
+A context is created at the beginning of the request.
 
-- **bodyParsers** are expected to fill out **requestData.data** filled (requestData extends AxiosRequestConfig)
-- **path parameters** are replacing the **requestData.url** like /image/{image_id}-> /image/123123
-- **query parameters** are pushing their \[key, value\] pairs to **queryParameterChain**
-- **headers** are being defined as \[key, value\] pairs in **headers**
+- **bodyParsers** are expected to fill out **context.requestData.data** (requestData extends AxiosRequestConfig)
+- **path parameters** are updateing the **context.requestData.url**, /image/{image_id}-> /image/123123
+- **query parameters** are pushing their \[key, value\] pairs to **context.queryParameterChain**
+- **headers** are being defined as \[key, value\] pairs in **context.headers**
 - security functions have no designated context fields, they are expected to fill out their respective headers or query parameters, or data fields
 
-## Context consuming
+## Context Execution
 
-The axios request gets created in the execute function, which only has a single input, and that is the context.
+The actual axios request is created in the _execute_ function, which relies on **context**.
 
 ```ts
 function execute<
@@ -237,19 +253,19 @@ function execute<
   ): AxiosPromise<ResponseFinder<Responses, M>[ExpectedResType]>{...}
 ```
 
-By the time the _execute_ function gets called the context should be fully built
+Because of this, by the time the _execute_ function gets called the context has to be fully built.
 
 Afther the execution the context is considered consumed, and will be thrown away.
 
 # Security
 
-There is no default behaviour for security, but there is two hook provided for security operations.
+There is **no default behaviour** for security, but there is **two hook provided** for security operations.
 
 ## Global security
 
-The QP constructor options may contain a globalSecurityHandler, which will be called for every security defined in the openapi root security object.
+The **QueryPool** constructor options may contain a globalSecurityHandler, which will be called for every security defined in the openapi root security object.
 
-At every call you only get one security schema, but you can see other keys defined in fullSecurity if available.
+With each call, you only get one security schema, but you can see the other keys defined in the fullSecurity object.
 
 ```ts
 funcion globalSecurityHandler (
@@ -261,10 +277,11 @@ funcion globalSecurityHandler (
       ) => {};
 ```
 
-To understand **"&"** and **"|"** behaviors in security in openapi, please refer to the openapi specification.
-SecuritySchema, and SecurityRequirements are exact values from the lookUpJson, which is direct translation of the original openapi
+To understand **"&"** and **"|"** behaviors and expectations in openapi security, please refer to the openapi specification.
 
-It is expected of the programmer to fill out the required context fields when handling security
+**SecuritySchema, and SecurityRequirements are exact values from the lookUpJson**, which is direct _translation_ of the original openapi.
+
+It is expected of the programmer to fill out the required **context** fields when handling security.
 
 ## Local security
 
@@ -282,19 +299,25 @@ funcion lookupSecurityHandler(
 
 ## Priority
 
-If global security is defined, it gets called first
+If global security is defined, its keys get called first.
 
-Local security is called last, so you may overwrite or delete any security set in the global security
+Local security keys are called last, so you may overwrite or delete any security set previously in the global security.
 
 ## Best practices
 
-Since **QueryPool** calls the context creator, and the security tools on demand, it is best if you use these handlers to connect your security information with any other state manager you may use.
+Since **QueryPool** calls the context creator and the security tools **on demand**, it is best if you use these handlers to connect your security information with any other state manager you may use.
 
-If your security measures do not change often it might be best if you use the context creator to always ensure your api key/bearer token is set.
+If your security measures do not change often it might be best to use the **contextCreator** or **defaultSettings** to always ensure your api key/bearer token is set.
 
 Otherwise its best to expose a function in your security flow,that can always access the latest security tokens and then supply it as a security handler
 
+If your schema does not explicitly describe a security, but you still want to supply, both **defaultSettings** and **contextCreator** are/can be callable, so you can _just put your security_ in the **context** on every context creation.
+
 # Zod integration
+
+Zod schemas are pre built via [type-guardian](https://www.npmjs.com/package/@bunnio/type-guardian)!
+
+![Alt Text](./documentation/images/ZodSample.jpg)
 
 The **QueryPool** currently supports 2+1 Zod Schema retriever.
 
@@ -304,7 +327,7 @@ The **QueryPool** currently supports 2+1 Zod Schema retriever.
 
 it is highly recommended that you use getPathZod, as it retrieves the full zod specification and you can cherry pick which objects you want to use.
 
-type-guardian keeps a very simple structure for defining zod schemas
+[type-guardian](https://www.npmjs.com/package/@bunnio/type-guardian)! keeps a very simple structure for defining zod schemas
 
 ## requestBody
 
@@ -314,7 +337,9 @@ In _requestBodies_ you can expect to find every schema defined in you openapi as
 
 This also means that you may need to break up the zod definitions, for example if you are sending _multipart/form-data_
 
-_You can use z.infer to make typing easier_
+_This might get fixed/supported better in a future release_
+
+**You can use z.infer to make typing easier**
 
 ```ts
 const fullZod = qp.getPathZod("/image/with_files", "post");
@@ -324,6 +349,8 @@ type ZodStuff = z.infer<(typeof fullZod)["requestBody"]["multipart/form-data"]>;
 ## parameters
 
 Parameters match their interface counterpart, and are slightly different than your openapi definitions.
+
+![Alt Text](./documentation/images/ZodSample2.jpg)
 
 Parameters are aggregated into four categories
 
@@ -341,12 +368,14 @@ Each category is a _key_->**ZodSchema** pair, that you can use to parse the para
 
 A yaml navigator is included in the **QueryPool**.
 
-This object ensures, that every entry that is passed through the layers are the actual component, and not just a $ref,
+This object ensures, that every _lookUp_ entry passed through the layers are the actual component, and not just a $ref,
+
 _...at least at root level_
 
 ## silentError (default false)
 
 You can silence _some_ errors by setting silentError to true.
+
 This mostly affects zod lookups, when the zod validator is not found.
 
 Silent errors will still log, but not throw an actual error
