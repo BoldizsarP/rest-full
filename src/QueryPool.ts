@@ -34,7 +34,10 @@ import {
   queryDeepObjectSerializer,
 } from "./parameter-tools/queryParameter";
 import { headerSimpleEncode } from "./parameter-tools/headerParameters";
-import { SecuritySchema } from "@bunnio/type-guardian/dist/yaml-tools/securitySchemes/interface";
+import {
+  SecurityRequirements,
+  SecuritySchema,
+} from "@bunnio/type-guardian/dist/yaml-tools/securitySchemes/interface";
 import {
   DescriptorResponses,
   ResponseFinder,
@@ -52,7 +55,6 @@ function styleToPrefix(style: "simple" | "label" | "matrix") {
       throw Error("Style is not path style!" + `<${style}>`);
   }
 }
-z.string();
 type DefaultContext<T> = {
   requestData: T & { url: string };
   queryParameterChain: string[];
@@ -112,11 +114,15 @@ export class QueryPool<
       globalSecurityHandler?: (
         security: DeepReadonly<SecuritySchema>,
         scopes: DeepReadonly<string[]>,
+        name: string,
+        fullSecurity: DeepReadonly<SecurityRequirements>,
         context: Context
       ) => void;
       lookupSecurityHandler?: (
         security: DeepReadonly<SecuritySchema>,
         scopes: DeepReadonly<string[]>,
+        name: string,
+        fullSecurity: DeepReadonly<SecurityRequirements>,
         context: Context
       ) => void;
       additionalBodyParser?: {
@@ -192,6 +198,15 @@ export class QueryPool<
     throw Error(
       "Zod is searched but not found on " + `${path} ${method} ${key}`
     );
+  }
+  getPathZod<
+    P extends keyof InterfacePath & keyof ZodPath & string,
+    M extends keyof InterfacePath[P] & keyof ZodPath[P] & string
+  >(path: P, method: M): ZodPath[P][M] {
+    if (this.zodPath[path][method]["requestBody"])
+      return this.zodPath[path][method] as any;
+
+    throw Error("Zod is searched but not found on " + `${path} ${method} `);
   }
 
   //   OverWrite this to support additional encoding types for multipart formData
@@ -605,7 +620,7 @@ export class QueryPool<
             throw Error(`Security lookup form key ${keyName} is missing!`);
           return;
         }
-        secuHandler(secu, sec[keyName], context);
+        secuHandler(secu, sec[keyName], keyName, sec, context);
       });
     });
   }
@@ -620,7 +635,7 @@ export class QueryPool<
             throw Error(`Security lookup form key ${keyName} is missing!`);
           return;
         }
-        secuHandler(secu, localSec[keyName], context);
+        secuHandler(secu, localSec[keyName], keyName, localSec, context);
       });
     });
   }
