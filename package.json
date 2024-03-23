@@ -1,6 +1,6 @@
 {
   "name": "@bunnio/rest-full",
-  "version": "0.0.2-rc.6",
+  "version": "0.0.2-rc.7",
   "description": "Class oriented wrapper for @bunnio/type-guardian, that enables creating and managing openapi endpoints as a single class object",
   "main": "index.ts",
   "scripts": {
