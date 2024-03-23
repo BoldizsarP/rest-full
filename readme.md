@@ -159,13 +159,13 @@ In general it's better practise to use validators BEFORE calling query, see **Zo
 
 ### Expected Result Type
 
-The value expectedResultType may contain which response shape you expect,
+The value expectedResultType may contain which content-type you expect,
 
 _such as **application/json**, **multipart/form-data**_,
 
-if multiple content type is defined in the responses object of the operation.
+...if multiple content type is defined in the responses object of the operation.
 
-This is only used to set the proper response shape.
+This is only used to set the proper response content-type.
 
 Default is **application/json**.
 
@@ -204,9 +204,9 @@ Every time a **query** is called, the function creates a context, which then get
 
 ## Setting up context
 
-The context shape can be extended via specifing contextMaker in the _constructor_ settings.
+The context shape can be extended via specifing **contextMaker** in the _constructor_ settings.
 
-The context must contain elements like,
+Regardless of the supplied shape, the context must contain elements like,
 
 ```ts
 type context<Body> = {
@@ -236,14 +236,14 @@ however, the **contextMaker gets all this information**, so you only need to app
 A context is created at the beginning of the request.
 
 - **bodyParsers** are expected to fill out **context.requestData.data** (requestData extends AxiosRequestConfig)
-- **path parameters** are updateing the **context.requestData.url**, /image/{image_id}-> /image/123123
+- **path parameters** are updating the **context.requestData.url**, /image/{image_id}-> /image/123123
 - **query parameters** are pushing their \[key, value\] pairs to **context.queryParameterChain**
 - **headers** are being defined as \[key, value\] pairs in **context.headers**
-- security functions have no designated context fields, they are expected to fill out their respective headers or query parameters, or data fields
+- security functions have no designated **context** fields, they are expected to fill out their respective headers or query parameters, or data fields
 
 ## Context Execution
 
-The actual axios request is created in the _execute_ function, which relies on **context**.
+The actual axios request is created in the _execute_ function, which relies only on **context**.
 
 ```ts
 function execute<
@@ -253,19 +253,21 @@ function execute<
   ): AxiosPromise<ResponseFinder<Responses, M>[ExpectedResType]>{...}
 ```
 
-Because of this, by the time the _execute_ function gets called the context has to be fully built.
+Because of this, by the time the _execute_ function gets called the **context** has to be fully built.
 
-Afther the execution the context is considered consumed, and will be thrown away.
+After the execution the **context** is considered consumed, and will be thrown away.
 
 # Security
 
-There is **no default behaviour** for security, but there is **two hook provided** for security operations.
+_Global security term means site wide security, defined at root level, local security means security defined at OperationOjbect_
+
+There is **no default behaviour** for security, but there is **two hooks provided** for the security operations.
 
 ## Global security
 
-The **QueryPool** constructor options may contain a globalSecurityHandler, which will be called for every security defined in the openapi root security object.
+The **QueryPool** constructor parameter _options_ may contain a **globalSecurityHandler**, which then will be called for **every security** defined in the **openapi root security object**.
 
-With each call, you only get one security schema, but you can see the other keys defined in the fullSecurity object.
+With each call, you only get **one security schema**, but you can see the other keys defined in the fullSecurity object.
 
 ```ts
 funcion globalSecurityHandler (
@@ -305,13 +307,13 @@ Local security keys are called last, so you may overwrite or delete any security
 
 ## Best practices
 
-Since **QueryPool** calls the context creator and the security tools **on demand**, it is best if you use these handlers to connect your security information with any other state manager you may use.
+Since **QueryPool** calls the **contextCreator** and the **security tools** **on demand**, it is best if you use these handlers to connect your security information with any other state manager you may use.
 
 If your security measures do not change often it might be best to use the **contextCreator** or **defaultSettings** to always ensure your api key/bearer token is set.
 
-Otherwise its best to expose a function in your security flow,that can always access the latest security tokens and then supply it as a security handler
+Otherwise its better to expose a function in your security flow,that can always access the latest security tokens and then supply it as a security handler
 
-If your schema does not explicitly describe a security, but you still want to supply, both **defaultSettings** and **contextCreator** are/can be callable, so you can _just put your security_ in the **context** on every context creation.
+If your schema does not explicitly describe a security, but you still want to supply, both **defaultSettings** and **contextCreator** are/can be callable, so you can _just put your security tokens_ in the **context** on every context creation.
 
 # Zod integration
 
@@ -325,7 +327,7 @@ The **QueryPool** currently supports 2+1 Zod Schema retriever.
 - **getPathZod**
 - getParameterZod
 
-it is highly recommended that you use getPathZod, as it retrieves the full zod specification and you can cherry pick which objects you want to use.
+it is highly recommended that you use **getPathZod**, as it retrieves the full zod specification and you can cherry pick which objects you want to use.
 
 [type-guardian](https://www.npmjs.com/package/@bunnio/type-guardian)! keeps a very simple structure for defining zod schemas
 
@@ -348,9 +350,7 @@ type ZodStuff = z.infer<(typeof fullZod)["requestBody"]["multipart/form-data"]>;
 
 ## parameters
 
-Parameters match their interface counterpart, and are slightly different than your openapi definitions.
-
-![Alt Text](./documentation/images/ZodSample2.jpg)
+Parameters match their interface counterparts, and are slightly different than your openapi definitions.
 
 Parameters are aggregated into four categories
 
@@ -362,13 +362,15 @@ Parameters are aggregated into four categories
 
 Each category is a _key_->**ZodSchema** pair, that you can use to parse the parameter
 
+![Alt Text](./documentation/images/ZodSample2.jpg)
+
 # Additional settings, tools available
 
 ## YamlNavigator
 
 A yaml navigator is included in the **QueryPool**.
 
-This object ensures, that every _lookUp_ entry passed through the layers are the actual component, and not just a $ref,
+This class ensures, that every _lookUp_ entry passed through the layers are the actual component, and not just a $ref,
 
 _...at least at root level_
 
@@ -398,8 +400,8 @@ Whether to omit a console log stating that cookies are not supported, when cooki
 
 ## throwOnSecurityMissing (default true)
 
-Whether to throw an error if a security is defined in the openapi, but the actual specification (in components) was not found, hence it wasn't executed
+Whether to throw an error if a security is defined in the openapi, but the actual specification (in components) was not found, thus it wasn't executed
 
 ## defaultSettings
 
-Either a const settings that gets set at every context creation for the value requestData, or a function that returns an AxiosRequestConfig or something that extends AxiosRequestConfig
+Either a const settings that gets used at every context creation for the value requestData, or a function that returns an **AxiosRequestConfig or something** that extends AxiosRequestConfig
