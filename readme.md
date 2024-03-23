@@ -6,7 +6,66 @@ A Class oriented wrapper for the [@bunnio/type-guardian](https://www.npmjs.com/p
 
 # USAGE
 
-## Initialization
+> After using type-guardian, with full generation, navigate to a generated folder
+
+Import the three shapes that were generated previously
+
+```ts
+// You may rename these objects it however you want it
+import { paths as InterfacePaths } from "./YourOpenapiSource.interface";
+import { paths as ZodPath } from "./YourOpenapiSource.zod";
+import { lookupJson } from "./YourOpenapiSource.lookup";
+```
+
+Create the RequestPool by using these shapes
+
+```ts
+// You must supply the "InterfacePaths" as a template type, to enable proper typing.
+const QP = new RequestPool<typeof ZodPath, InterfacePaths, typeof lookupJson>(
+  ZodPath,
+  lookupJson
+);
+```
+
+Once initialized, you can call every path, that is defined in the original openapi, by calling the **request** function.
+
+```ts
+const response = qp.request(
+  "/image/{image_id}", // path in openapi
+  "put", // method defined in path
+  "application/json", // body type if applicable or undefined <alias BodyKey>
+  {}, // the actual body content or undefined <alias Content>
+  {
+    path: { image_id: "RandomStringId" },
+  }, // every allowed <parameter> specified under <parameters> in openapi
+  { validate: { requestBody: true } } // optional settings see below
+);
+```
+
+Alternatively you can retrieve the zod types, for each OperationObject by calling **getPathZod**.
+
+```ts
+// Path conforms to the OperationObject type defined inside Descriptor<T>,
+// You can see it in details in file dist/types.d.ts
+interface OperationObject: {
+        requestBody?: Descriptor<ZodSchema>["requestBody"];
+        responses: Descriptor<ZodSchema>["responses"];
+        parameters?: Descriptor<ZodSchema>["parameters"];
+    };
+const operationObjectZod = qp.getPathZod("/image/with_files", "post");
+```
+
+You can then use these zod schemas to further build your forms or other data submissions.
+
+Example
+
+```ts
+import { useForm } from "react-hook-form";
+type BodyZod = z.infer<(typeof fullZod)["requestBody"]["application/json"]>;
+const register = useForm<BodyZod>();
+```
+
+## Initialization (in details)
 
 This package provides a class that expects 3 shaped values
 
@@ -18,7 +77,7 @@ and provides a pre typed interface to properly use said Openapi specification.
 
 The default **RequestPool** object is written for Axios, but you can easily change it to your preferred HTTP client.
 
-An example initialization
+An example initialization (same as above)
 
 ```ts
 import { RequestPool } from "@bunnio/rest-full/dist/RequestPool";
@@ -36,7 +95,7 @@ the **RequestPool** instance will be a pre-typed interface according to your spe
 You can use it as as:
 
 ```ts
-const response = qp.query(
+const response = qp.request(
   "/image/{image_id}", // path in openapi
   "put", // method defined in path
   "application/json", // body type if applicable or undefined <alias BodyKey>
@@ -80,12 +139,12 @@ const qp = new RequestPool<typeof ZodPath, InterfacePaths, typeof lookupJson>(
 
 You must adhere to the format, every additional type must be matched with a parser function that has the standard inputs (provided by **RequestPool**)
 
-- path,method, bodyKey, and requestContent are directly passed from original "query" call
+- path,method, bodyKey, and requestContent are directly passed from original "request" call
 - context is defined in two segments
 - - The mandatory context supplied by the **RequestPool**
 - - The optional context that can be initialized by **contextMaker** in the settings
 
-The bodyParser is expected to fill out the appropriate fields in the **context**, see more at the **RequestPool.query and Context**
+The bodyParser is expected to fill out the appropriate fields in the **context**, see more at the **RequestPool.request and Context**
 
 ## Parameters
 
@@ -155,7 +214,7 @@ The _validate_ object can only contain values that are provided in the previous 
 
 Validators are run before the context gets built, and are strictly called only for values/keys that were submitted.
 
-In general it's better practise to use validators BEFORE calling query, see **Zod integration**
+In general it's better practise to use validators BEFORE calling request, see **Zod integration**
 
 ### Expected Result Type
 
@@ -199,9 +258,9 @@ will translate to:
 
 _I am currently working on a standardized approach, to enable response parsing, but for now, be aware of this limitation_
 
-# RequestPool.query and Context
+# RequestPool.request and Context
 
-Every time a **query** is called, the function creates a context, which then gets filled with every information the query may need.
+Every time a **request** is called, the function creates a context, which then gets filled with every information the request may need.
 
 ## Setting up context
 
@@ -359,7 +418,7 @@ Parameters are aggregated into four categories
 - **path**
 - **headers**
 - ~~cookies~~
-- - cookies are available but the query will disregard it for now
+- - cookies are available but the request will disregard it for now
 
 Each category is a _key_->**ZodSchema** pair, that you can use to parse the parameter
 
