@@ -141,7 +141,7 @@ throw Error(
 );
 ```
 
-Parameters are expected to be **simple** type, **content type is not yet supported**
+Parameters are expected to be **string compatbile, or simple objects**, **content type is not yet supported**
 
 ## Additional settings
 
